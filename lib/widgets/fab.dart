@@ -1,9 +1,9 @@
-import 'package:URL_launcher/screens/edit_item_screen.dart';
+import 'package:url_launcher_app/screens/edit_item_screen.dart';
 import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
 
 class FAB extends StatelessWidget {
-  FAB({Key? key}) : super(key: key);
+  const FAB({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -13,8 +13,8 @@ class FAB extends StatelessWidget {
       closedBuilder: (context, action) {
         return FloatingActionButton(
           elevation: 0,
-          child: Icon(Icons.add),
           onPressed: action,
+          child: Icon(Icons.add),
         );
       },
       openBuilder: (context, action) {

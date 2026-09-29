@@ -5,6 +5,7 @@ Future<void> launchURL(String url, BuildContext context) async {
   try {
     await launchUrl((Uri.parse(url)), mode: LaunchMode.externalApplication);
   } catch (e) {
+    if (!context.mounted) return;
     await showDialog(
       context: context,
       builder: (BuildContext context) {

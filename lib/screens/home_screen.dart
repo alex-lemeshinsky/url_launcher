@@ -1,16 +1,17 @@
-import 'package:URL_launcher/functions/launch_url.dart';
-import 'package:URL_launcher/models/item.dart';
-import 'package:URL_launcher/providers/db_provider.dart';
-import 'package:URL_launcher/screens/edit_item_screen.dart';
-import 'package:URL_launcher/widgets/confirmation_dialog.dart';
-import 'package:URL_launcher/widgets/fab.dart';
+import 'package:url_launcher_app/functions/launch_url.dart';
+import 'package:url_launcher_app/models/item.dart';
+import 'package:url_launcher_app/providers/db_provider.dart';
+import 'package:url_launcher_app/screens/edit_item_screen.dart';
+import 'package:url_launcher_app/widgets/confirmation_dialog.dart';
+import 'package:url_launcher_app/widgets/fab.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
-import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:provider/provider.dart';
 import 'package:quick_actions/quick_actions.dart';
 
 class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     DbProvider dbProvider = Provider.of<DbProvider>(context, listen: false);
@@ -21,10 +22,8 @@ class HomeScreen extends StatelessWidget {
     });
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text("URL launcher"),
-      ),
-      floatingActionButton: FAB(),
+      appBar: AppBar(title: Text("URL launcher")),
+      floatingActionButton: const FAB(),
       body: StreamBuilder(
         stream: dbProvider.itemsStream,
         builder: (context, snapshot) {
@@ -45,49 +44,45 @@ class HomeScreen extends StatelessWidget {
             itemBuilder: (BuildContext context, int index) {
               Item item = dbProvider.items[index];
 
-              return AnimationConfiguration.staggeredList(
+              return _StaggeredEntry(
                 key: ValueKey(item),
                 position: index,
-                child: SlideAnimation(
-                  child: FadeInAnimation(
-                    child: Card(
-                      elevation: 10,
-                      child: Slidable(
-                        endActionPane: ActionPane(
-                          motion: ScrollMotion(),
-                          children: [
-                            SlidableAction(
-                              label: "Edit",
-                              backgroundColor: Colors.blue,
-                              icon: Icons.edit,
-                              onPressed: (ctx) => Navigator.push(
-                                ctx,
-                                MaterialPageRoute(
-                                  builder: (_) => EditItemScreen(
-                                    index: index,
-                                    title: item.title,
-                                    url: item.url,
-                                  ),
-                                ),
+                child: Card(
+                  elevation: 10,
+                  child: Slidable(
+                    endActionPane: ActionPane(
+                      motion: ScrollMotion(),
+                      children: [
+                        SlidableAction(
+                          label: "Edit",
+                          backgroundColor: Colors.blue,
+                          icon: Icons.edit,
+                          onPressed: (ctx) => Navigator.push(
+                            ctx,
+                            MaterialPageRoute(
+                              builder: (_) => EditItemScreen(
+                                index: index,
+                                title: item.title,
+                                url: item.url,
                               ),
                             ),
-                            SlidableAction(
-                              label: "Delete",
-                              backgroundColor: Colors.red,
-                              icon: Icons.delete,
-                              onPressed: (ctx) => ConfirmationDialog(
-                                item: item,
-                                index: index,
-                              ).show(ctx),
-                            ),
-                          ],
+                          ),
                         ),
-                        child: ListTile(
-                          title: Text(item.title),
-                          trailing: Icon(Icons.chevron_left),
-                          onTap: () async => await launchURL(item.url, context),
+                        SlidableAction(
+                          label: "Delete",
+                          backgroundColor: Colors.red,
+                          icon: Icons.delete,
+                          onPressed: (ctx) => ConfirmationDialog(
+                            item: item,
+                            index: index,
+                          ).show(ctx),
                         ),
-                      ),
+                      ],
+                    ),
+                    child: ListTile(
+                      title: Text(item.title),
+                      trailing: Icon(Icons.chevron_left),
+                      onTap: () async => await launchURL(item.url, context),
                     ),
                   ),
                 ),
@@ -95,6 +90,47 @@ class HomeScreen extends StatelessWidget {
             },
           );
         },
+      ),
+    );
+  }
+}
+
+/// Fades an item in while sliding it up 50px. Items further down the list
+/// start slightly later, which gives the staggered entrance.
+class _StaggeredEntry extends StatelessWidget {
+  const _StaggeredEntry({
+    super.key,
+    required this.position,
+    required this.child,
+  });
+
+  final int position;
+  final Widget child;
+
+  static const _duration = Duration(milliseconds: 375);
+  static const _stagger = Duration(milliseconds: 75);
+  static const _maxStaggeredItems = 10;
+
+  @override
+  Widget build(BuildContext context) {
+    final delay = _stagger * position.clamp(0, _maxStaggeredItems);
+    final total = delay + _duration;
+
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: total,
+      curve: Interval(
+        delay.inMilliseconds / total.inMilliseconds,
+        1,
+        curve: Curves.ease,
+      ),
+      child: child,
+      builder: (context, value, child) => Opacity(
+        opacity: value,
+        child: Transform.translate(
+          offset: Offset(0, 50 * (1 - value)),
+          child: child,
+        ),
       ),
     );
   }

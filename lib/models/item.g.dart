@@ -8,7 +8,7 @@ part of 'item.dart';
 
 class ItemAdapter extends TypeAdapter<Item> {
   @override
-  final int typeId = 0;
+  final typeId = 0;
 
   @override
   Item read(BinaryReader reader) {
@@ -16,10 +16,7 @@ class ItemAdapter extends TypeAdapter<Item> {
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return Item(
-      title: fields[0] as String,
-      url: fields[1] as String,
-    );
+    return Item(title: fields[0] as String, url: fields[1] as String);
   }
 
   @override

@@ -1,5 +1,5 @@
-import 'package:URL_launcher/models/item.dart';
-import 'package:URL_launcher/providers/db_provider.dart';
+import 'package:url_launcher_app/models/item.dart';
+import 'package:url_launcher_app/providers/db_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -16,9 +16,7 @@ class ConfirmationDialog {
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text('Confirm'),
-          content: Text(
-            "Are you sure deleting ${item.title} item?",
-          ),
+          content: Text("Are you sure deleting ${item.title} item?"),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),

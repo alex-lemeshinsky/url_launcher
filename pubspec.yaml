@@ -1,4 +1,4 @@
-name: URL_launcher
+name: url_launcher_app
 description: A simple application to save and launch URLs.
 
 publish_to: 'none'
@@ -6,32 +6,33 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: ">=2.13.0 <=3.0.0"
+  sdk: ^3.13.0
 
 dependencies:
   flutter:
     sdk: flutter
 
-  url_launcher:
-  hive:
-  hive_flutter:
-  path_provider:
-  flutter_staggered_animations:
-  animations:
-  flutter_slidable:
-  provider:
-  quick_actions:
+  url_launcher: ^6.3.2
+  hive_ce: ^2.20.1
+  hive_ce_flutter: ^2.4.0
+  animations: ^3.0.0
+  flutter_slidable: ^4.0.3
+  provider: ^6.1.5+1
+  quick_actions: ^1.1.1
 
-  cupertino_icons: ^1.0.2
+  cupertino_icons: ^2.0.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  integration_test:
+    sdk: flutter
 
-  hive_generator:
-  build_runner:
-  flutter_launcher_icons:
-  flutter_native_splash:
+  flutter_lints: ^6.0.0
+  hive_ce_generator: ^1.11.3
+  build_runner: ^2.16.1
+  flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.8
 
 flutter_icons:
   image_path: "assets/app-icon.png"
@@ -44,3 +45,7 @@ flutter_native_splash:
 
 flutter:
   uses-material-design: true
+
+  # iOS plugins are integrated through Swift Package Manager only (no CocoaPods).
+  config:
+    enable-swift-package-manager: true
