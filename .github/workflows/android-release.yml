@@ -1,0 +1,111 @@
+name: Android release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: google-play-production
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read version from tag
+        id: version
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        shell: bash
+        run: |
+          if [[ ! "$RELEASE_TAG" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)\+([1-9][0-9]{0,9})$ ]]; then
+            echo '::error::Tag must be vMAJOR.MINOR.PATCH+BUILD_NUMBER (for example v1.0.1+2).'
+            exit 1
+          fi
+          build_name="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.${BASH_REMATCH[3]}"
+          build_number="${BASH_REMATCH[4]}"
+          if (( build_number > 2100000000 )); then
+            echo '::error::Google Play version code must not exceed 2100000000.'
+            exit 1
+          fi
+          echo "build_name=$build_name" >> "$GITHUB_OUTPUT"
+          echo "build_number=$build_number" >> "$GITHUB_OUTPUT"
+
+      - name: Check release secrets
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+        shell: bash
+        run: |
+          for name in ANDROID_KEYSTORE_BASE64 ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD ANDROID_STORE_PASSWORD GOOGLE_PLAY_SERVICE_ACCOUNT_JSON; do
+            if [[ -z "${!name}" ]]; then
+              echo "::error::Missing $name repository secret."
+              exit 1
+            fi
+          done
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.5'
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Restore upload keystore
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_FILE: ${{ runner.temp }}/upload-keystore.jks
+        shell: bash
+        run: |
+          umask 077
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$ANDROID_KEYSTORE_FILE"
+          if [[ ! -s "$ANDROID_KEYSTORE_FILE" ]]; then
+            echo '::error::Decoded upload keystore is empty.'
+            exit 1
+          fi
+
+      - name: Build signed app bundle
+        env:
+          ANDROID_KEYSTORE_FILE: ${{ runner.temp }}/upload-keystore.jks
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          BUILD_NAME: ${{ steps.version.outputs.build_name }}
+          BUILD_NUMBER: ${{ steps.version.outputs.build_number }}
+        run: flutter build appbundle --release --build-name="$BUILD_NAME" --build-number="$BUILD_NUMBER"
+
+      - name: Save signed app bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-${{ github.ref_name }}
+          path: build/app/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+
+      - name: Create draft production release in Google Play
+        uses: r0adkll/upload-google-play@v1.1.5
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.oleksii_lemeshinskyi.url_launcher
+          releaseFiles: build/app/outputs/bundle/release/app-release.aab
+          tracks: production
+          releaseName: ${{ github.ref_name }}
+          status: draft

@@ -11,6 +11,11 @@ val keystorePropertiesFile = rootProject.file("key.properties")
 if (keystorePropertiesFile.exists()) {
     keystorePropertiesFile.inputStream().use { keystoreProperties.load(it) }
 }
+val ciKeystoreFile = System.getenv("ANDROID_KEYSTORE_FILE")?.takeIf { it.isNotBlank() }
+
+fun requiredSigningEnv(name: String): String =
+    System.getenv(name)?.takeIf { it.isNotEmpty() }
+        ?: error("Missing $name for Android release signing")
 
 android {
     namespace = "com.oleksii_lemeshinskyi.url_launcher"
@@ -38,12 +43,28 @@ android {
     }
 
     signingConfigs {
-        if (keystorePropertiesFile.exists()) {
+        if (ciKeystoreFile != null || keystorePropertiesFile.exists()) {
             create("release") {
-                keyAlias = keystoreProperties["keyAlias"] as String
-                keyPassword = keystoreProperties["keyPassword"] as String
-                storeFile = keystoreProperties["storeFile"]?.let { file(it as String) }
-                storePassword = keystoreProperties["storePassword"] as String
+                keyAlias = if (ciKeystoreFile != null) {
+                    requiredSigningEnv("ANDROID_KEY_ALIAS")
+                } else {
+                    keystoreProperties["keyAlias"] as String
+                }
+                keyPassword = if (ciKeystoreFile != null) {
+                    requiredSigningEnv("ANDROID_KEY_PASSWORD")
+                } else {
+                    keystoreProperties["keyPassword"] as String
+                }
+                storeFile = if (ciKeystoreFile != null) {
+                    file(ciKeystoreFile)
+                } else {
+                    keystoreProperties["storeFile"]?.let { file(it as String) }
+                }
+                storePassword = if (ciKeystoreFile != null) {
+                    requiredSigningEnv("ANDROID_STORE_PASSWORD")
+                } else {
+                    keystoreProperties["storePassword"] as String
+                }
             }
         }
     }
@@ -52,7 +73,7 @@ android {
         release {
             // Sign with key.properties when present, otherwise fall back to the
             // debug keys so `flutter run --release` keeps working.
-            signingConfig = if (keystorePropertiesFile.exists()) {
+            signingConfig = if (ciKeystoreFile != null || keystorePropertiesFile.exists()) {
                 signingConfigs.getByName("release")
             } else {
                 signingConfigs.getByName("debug")
