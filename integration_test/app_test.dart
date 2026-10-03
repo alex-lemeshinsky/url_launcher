@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_ce/hive.dart';
 import 'package:integration_test/integration_test.dart';
@@ -19,7 +20,7 @@ Future<void> _addItem(WidgetTester tester, String title, String url) async {
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('add, validate, edit, delete and persist URLs', (tester) async {
+  testWidgets('add, validate, edit, delete and copy URLs', (tester) async {
     app.main();
     await tester.pumpAndSettle();
 
@@ -75,8 +76,24 @@ void main() {
     expect(find.text('Flutter docs'), findsNothing);
     expect(box.length, 0);
 
-    // Leave one item behind so the list can be inspected on the simulator.
+    // Leave saved items behind so the list can be inspected on the simulator.
     await _addItem(tester, 'Flutter', 'https://flutter.dev');
     expect(box.length, 1);
+
+    // View and copy all URLs for a backup, without changing stored items.
+    await _addItem(tester, 'Dart', 'https://dart.dev');
+    await tester.tap(find.byTooltip('All URLs'));
+    await tester.pumpAndSettle();
+    const urls = 'https://flutter.dev\nhttps://dart.dev';
+    expect(find.text(urls), findsOneWidget);
+    await tester.tap(find.text('Copy all URLs'));
+    await tester.pumpAndSettle();
+    expect((await Clipboard.getData(Clipboard.kTextPlain))?.text, urls);
+    expect(find.text('All URLs copied'), findsOneWidget);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(find.text('Flutter'), findsOneWidget);
+    expect(find.text('Dart'), findsOneWidget);
+    expect(box.length, 2);
   });
 }

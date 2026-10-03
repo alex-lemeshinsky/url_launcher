@@ -1,6 +1,7 @@
 import 'package:url_launcher_app/functions/launch_url.dart';
 import 'package:url_launcher_app/models/item.dart';
 import 'package:url_launcher_app/providers/db_provider.dart';
+import 'package:url_launcher_app/screens/all_urls_screen.dart';
 import 'package:url_launcher_app/screens/edit_item_screen.dart';
 import 'package:url_launcher_app/widgets/confirmation_dialog.dart';
 import 'package:url_launcher_app/widgets/fab.dart';
@@ -22,7 +23,19 @@ class HomeScreen extends StatelessWidget {
     });
 
     return Scaffold(
-      appBar: AppBar(title: Text("URL launcher")),
+      appBar: AppBar(
+        title: Text("URL launcher"),
+        actions: [
+          IconButton(
+            tooltip: 'All URLs',
+            icon: const Icon(Icons.list_alt),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AllUrlsScreen()),
+            ),
+          ),
+        ],
+      ),
       floatingActionButton: const FAB(),
       body: StreamBuilder(
         stream: dbProvider.itemsStream,
