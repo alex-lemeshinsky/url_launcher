@@ -9,13 +9,17 @@ Simple app to save and launch urls
 ### App features
 - [X] Basic HTTP links
 - [X] View and copy all saved URLs for backup
-- [ ] Email addresses
-- [ ] Phone numbers
+- [X] Email addresses
+- [X] Phone numbers
 - [ ] Translation
 
 Tap the **All URLs** list icon in the home screen's top bar to view every
 saved URL. Tap **Copy all URLs** to copy them, one per line, then paste them
 into a note or document for backup.
+
+When adding or editing an item, pick **Link**, **Email** or **Phone** above the
+value field. Email items open a new message in your mail app, and phone items
+open the dialer with the number filled in.
 
 ## Android releases
 

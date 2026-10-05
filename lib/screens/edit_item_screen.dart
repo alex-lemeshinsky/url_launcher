@@ -1,4 +1,5 @@
 import 'package:url_launcher_app/models/item.dart';
+import 'package:url_launcher_app/models/link_type.dart';
 import 'package:url_launcher_app/providers/db_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -18,14 +19,28 @@ class _EditItemScreenState extends State<EditItemScreen> {
   final _formKey = GlobalKey<FormState>();
   final FocusNode _titleFocusNode = FocusNode();
   final FocusNode _urlFocusNode = FocusNode();
+  late LinkType _type;
+  late final TextEditingController _urlController;
+  final _urlFieldKey = GlobalKey<FormFieldState<String>>();
 
   String? _title;
   String? _url;
 
   @override
+  void initState() {
+    super.initState();
+    final url = widget.url;
+    _type = url == null ? LinkType.link : LinkType.fromUrl(url);
+    _urlController = TextEditingController(
+      text: url == null ? _type.prefill : _type.displayValue(url),
+    );
+  }
+
+  @override
   void dispose() {
     _titleFocusNode.dispose();
     _urlFocusNode.dispose();
+    _urlController.dispose();
     super.dispose();
   }
 
@@ -58,26 +73,38 @@ class _EditItemScreenState extends State<EditItemScreen> {
                   return null;
                 },
               ),
+              Padding(
+                padding: EdgeInsets.only(top: 16),
+                child: SegmentedButton<LinkType>(
+                  segments: [
+                    for (final type in LinkType.values)
+                      ButtonSegment(value: type, label: Text(type.label)),
+                  ],
+                  selected: {_type},
+                  onSelectionChanged: (selection) {
+                    setState(() {
+                      _type = selection.single;
+                      // Clears a validation error left from the old type.
+                      _urlFieldKey.currentState!.reset();
+                      _urlController.text = _type.prefill;
+                    });
+                    // Refocus after the rebuild so the keyboard reopens with
+                    // the new type's layout; iOS ignores in-place changes.
+                    _urlFocusNode.unfocus();
+                    WidgetsBinding.instance.addPostFrameCallback(
+                      (_) => _urlFocusNode.requestFocus(),
+                    );
+                  },
+                ),
+              ),
               TextFormField(
-                initialValue: widget.url ?? "https://",
+                key: _urlFieldKey,
+                controller: _urlController,
                 focusNode: _urlFocusNode,
-                onSaved: (value) =>
-                    _url = value!.replaceAll("https://https://", "https://"),
-                decoration: InputDecoration(labelText: "Enter url"),
-                validator: (value) {
-                  //regexp to check url
-                  final regexp = RegExp(
-                    r"(https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|www\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9]+\.[^\s]{2,}|www\.[a-zA-Z0-9]+\.[^\s]{2,})",
-                  );
-
-                  if (value == null || value.isEmpty) {
-                    return 'Enter url';
-                  } else if (!regexp.hasMatch(value)) {
-                    return "Enter link in correct way 'https://example.com'";
-                  }
-
-                  return null;
-                },
+                keyboardType: _type.keyboardType,
+                onSaved: (value) => _url = _type.toUrl(value!),
+                decoration: InputDecoration(labelText: _type.fieldLabel),
+                validator: _type.validate,
               ),
               ElevatedButton(
                 onPressed: () {
