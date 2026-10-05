@@ -13,3 +13,4 @@ key.properties
 **/*.keystore
 **/*.jks
 upload_certificate.pem
+account.json
