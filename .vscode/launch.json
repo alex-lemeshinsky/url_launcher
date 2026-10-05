@@ -1,0 +1,28 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "url_launcher_app",
+      "request": "launch",
+      "type": "dart"
+    },
+    {
+      "name": "url_launcher_app (profile mode)",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "profile"
+    },
+    {
+      "name": "url_launcher_app (release mode)",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "release"
+    },
+    {
+      "name": "integration test (wipes saved data)",
+      "request": "launch",
+      "type": "dart",
+      "program": "integration_test/app_test.dart"
+    }
+  ]
+}
